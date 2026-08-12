@@ -1,8 +1,8 @@
 mock_provider "aws" {
   mock_data "aws_caller_identity" {
     defaults = {
-      account_id = "123456789012"
-      arn        = "arn:aws:iam::123456789012:user/terraform-test"
+      account_id = "796231892654"
+      arn        = "arn:aws:iam::796231892654:user/Niv-Bar"
       user_id    = "AIDATESTUSER"
     }
   }
@@ -28,16 +28,44 @@ mock_provider "helm" {}
 mock_provider "kubernetes" {}
 mock_provider "kubectl" {}
 
-run "production_inventory" {
+run "expected_account_configuration" {
   command = plan
 
   plan_options {
-    target = [aws_ecr_repository.services]
+    target = [
+      terraform_data.expected_aws_account,
+      aws_ecr_repository.services,
+    ]
+  }
+
+  assert {
+    condition     = local.account_id == "796231892654" && local.application_image_registry == "796231892654.dkr.ecr.eu-central-1.amazonaws.com"
+    error_message = "The ECR registry must be derived from the authenticated Niv account and configured region."
   }
 
   assert {
     condition     = length(local.microservices) == 6 && !contains(local.microservices, "sports-store-gateway")
     error_message = "Production ECR inventory must contain six images and exclude Gateway."
   }
+
+}
+
+run "wrong_account_rejected" {
+  command = plan
+
+  plan_options {
+    target = [terraform_data.expected_aws_account]
+  }
+
+  override_data {
+    target = data.aws_caller_identity.current
+    values = {
+      account_id = "324621154117"
+      arn        = "arn:aws:iam::324621154117:user/wrong-account"
+      user_id    = "AIDAWRONGACCOUNT"
+    }
+  }
+
+  expect_failures = [terraform_data.expected_aws_account]
 
 }

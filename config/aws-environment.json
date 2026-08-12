@@ -1,0 +1,5 @@
+{
+  "expected_account_id": "796231892654",
+  "aws_region": "eu-central-1",
+  "deployment_principal_arn": "arn:aws:iam::796231892654:user/Niv-Bar"
+}
